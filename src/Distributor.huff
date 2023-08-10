@@ -12,7 +12,46 @@
 
  #define function distribute(address[]) payable returns()
 
-
  #define macro MAIN() = takes(0) returns(0) {
-   
+    0x24 calldataload iszero err jumpi
+    0x00 calldataload 0xe0 shr 
+    __FUNC_SIG(distribute) eq dist jumpi
+    err jump
+    err:
+        0x00 0x00 revert
+    dist:
+        DISTRIBUTE()
  }
+
+ #define macro DISTRIBUTE() = takes(0) returns(0) {
+    0x24 calldataload
+    callvalue
+    div
+    check_transfer_loop:
+        0x24 calldataload 
+        0x20 
+        0x00 mload 
+        div
+        lt transfer jumpi
+        stop
+    transfer:
+        TRANSFER_TO_ADDRESS(check_transfer_loop)
+ }
+
+ #define fn TRANSFER_TO_ADDRESS(check_transfer_loop) = takes(1) returns(0) {
+    dup1
+    0x00
+    dup1
+    dup1
+    dup1
+    swap4
+    0x00 mload 0x44 add calldataload
+    gas
+    call
+    0x20 0x00 mload add 0x00 mstore
+    pop
+    swap1
+    pop
+    check_transfer_loop jump
+ }
+

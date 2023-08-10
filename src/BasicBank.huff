@@ -12,5 +12,59 @@
 #define function withdraw(uint256) payable returns()
 
 #define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xe0 shr dup1
+    __FUNC_SIG(balanceOf) eq balance_of jumpi
+    __FUNC_SIG(withdraw) eq withdraw_token jumpi
+    deposit jump
+    balance_of:
+        0x04 calldataload
+        0x00 mstore 
+        0x40 0x00 sha3
+        sload
+        0x00 mstore
+        0x20 0x00 return
+    withdraw_token:
+        CHECK_WITHDRAW_AMOUNT(err)
+        0x00 dup1 dup1 dup1
+        0x04 calldataload
+        caller
+        gas
+        call
+        stop
+    deposit:
+        GET_SLOT_CALLER_VALUE() // value in balance of slot
+        callvalue
+        add
+        caller
+        0x00 mstore
+        0x40 0x00 sha3
+        sstore
+        stop
+    err:
+        0x00 0x00 revert
+}
 
+#define macro GET_SLOT_CALLER_VALUE() = takes(0) returns(1) {
+    caller
+    0x00 mstore
+    0x40 0x00 sha3
+    sload
+}
+
+#define macro CHECK_WITHDRAW_AMOUNT(err) = takes(0) returns(0) {
+    GET_SLOT_CALLER_VALUE() //[balance]
+    dup1 //[balance, balance]
+    0x04 calldataload //[amount, balance, balance]
+    dup1 //[amount, amount, balance, balance]
+    swap2 //[balance, amount, amount, balance]
+    swap1 //[amount, balance, amount, balance]
+    gt //[0/1, amount, balance]
+    err //[error_pc, 0/1, amount, balance]
+    jumpi
+    swap1 //[balance, amount]
+    sub 
+    caller
+    0x00 mstore
+    0x40 0x00 sha3
+    sstore
 }

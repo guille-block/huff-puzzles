@@ -9,9 +9,26 @@
  *  NOTICE: The contract should revert when an unrecognized function is called
  */
 
+
+
  #define function makeContract() payable returns(address)
 
 
  #define macro MAIN() = takes(0) returns(0) {
-    
+    0x00 calldataload 0xe0 shr
+    __FUNC_SIG(makeContract) eq create_contract jumpi
+    0x00 0x00 revert
+    create_contract: 
+        __RIGHTPAD(0x600d380380600d6000396000f3620caffe60005260206000f3)
+        0x00
+        mstore
+        0x19
+        0x00
+        dup1
+        create
+        0x20
+        mstore
+        0x20
+        0x20
+        return
  }
