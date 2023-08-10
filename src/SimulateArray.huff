@@ -24,6 +24,117 @@
  #define error OutOfBounds()
  #define error ZeroArray()
 
+ #define constant ARRAY = FREE_STORAGE_POINTER()
+
  #define macro MAIN() = takes(0) returns(0) {
-    
+    0x00 calldataload 0xe0 shr
+    dup1
+    __FUNC_SIG(write) eq jump_write jumpi
+    dup1
+    __FUNC_SIG(pushh) eq jump_push jumpi
+    dup1
+    __FUNC_SIG(popp) eq jump_pop jumpi
+    dup1
+    __FUNC_SIG(length) eq jump_length jumpi
+    __FUNC_SIG(read) eq jump_read jumpi
+    err jump
+
+    jump_write:
+        WRITE(err_length)
+    jump_push:
+        PUSH()
+    jump_pop:
+        POP(err_zero)
+    jump_length:
+        LENGTH()
+    jump_read:
+        READ(err_length)
+    err:
+        0x00 0x00 revert
+    err_length:
+        __ERROR(OutOfBounds)
+        0x00 mstore
+        0x04 0x00 revert
+    err_zero:
+        __ERROR(ZeroArray)
+        0x00 mstore
+        0x04 0x00 revert
+ }
+
+ #define fn ERROR_OUT_OF_BOUNDS(err_length) = takes(0) returns(0) {
+     [ARRAY] sload
+     0x04 calldataload
+     lt iszero err_length jumpi
+ }
+ #define fn ERROR_ZERO_LENGTH(err_zero) = takes(0) returns(0) {
+     [ARRAY] sload
+     iszero err_zero jumpi
+ }
+
+ #define macro WRITE(err_length) = takes(0) returns(0) {
+    ERROR_OUT_OF_BOUNDS(err_length)
+    [ARRAY] 0x00 mstore
+    0x04 calldataload 0x20 mstore
+    0x24 calldataload
+    0x40 0x00 sha3
+    sstore
+    stop
+ }
+
+ #define macro READ(err_length) = takes(0) returns(0) {
+    ERROR_OUT_OF_BOUNDS(err_length)
+    [ARRAY] 0x00 mstore
+    0x04 calldataload 0x20 mstore
+    0x40 0x00 sha3
+    sload
+    0x00 mstore
+    0x20 0x00 return
+ }
+
+ #define macro LENGTH() = takes(0) returns(0) {
+    [ARRAY] sload
+    0x00 mstore
+    0x20 0x00 return
+ }
+
+ #define macro PUSH() = takes(0) returns(0) {
+    [ARRAY] //[slot]
+    dup1 //[slot, slot]
+    dup1 //[slot, slot, slot]
+    sload //[length, slot, slot]
+    dup1 //[length, length, slot, slot]
+    swap3 //[slot, length, slot, length]
+    0x00 mstore //[length, slot, length]
+    0x20 mstore //[slot, length]
+    0x04 calldataload //[num, slot, length]
+    0x40 0x00 sha3 //[key, num, slot, length]
+    sstore //[slot, length]
+    swap1 //[length, slot]
+    0x01 add //[new_length, slot]
+    swap1 //[slot, new_length]
+    sstore
+    stop
+ }
+
+ #define macro POP(err_zero) = takes(0) returns(0) {
+    ERROR_ZERO_LENGTH(err_zero)
+    [ARRAY] //[slot]
+    dup1 //[slot, slot]
+    dup1 //[slot, slot, slot]
+    sload //[length, slot, slot]
+    0x01 //[0x01, length, slot, slot]
+    swap1 //[length, 0x01, slot, slot]
+    sub //[new_length, slot, slot]
+    swap1 //[slot, new_length, slot]
+    0x00 mstore //[new_length, slot]
+    dup1 //[new_length, new_length, slot]
+    dup3 //[slot, new_length, new_length, slot]
+    0x00 mstore //[new_length, new_length, slot]
+    0x20 mstore //[new_length, slot]
+    0x00 //[0x00, new_length, slot]
+    0x40 0x00 sha3 //[sha_slot, 0x00, new_length, slot]
+    sstore //[new_length, slot]
+    swap1 //[slot, new_length]
+    sstore
+    stop
  }

@@ -12,5 +12,49 @@
 
 
 #define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xe0 shr
+    __FUNC_SIG(sumArray) eq func jumpi
+    err jump
 
+    func:
+        0x44    //[0x24]
+        calldatasize //[calldatasize, 0x24]
+        sub //[quant_of_items]
+        0x00 //[0x00, quant_of_items]
+        swap1 //[quant_of_items, 0x00]
+        dup2 //[0x00, quant_of_items, 0x00]
+        dup2 //[quant_of_items, 0x00, quant_of_items, 0x00]
+        dup2 //[0x00, quant_of_items, 0x00, quant_of_items, 0x00]
+        jumpdest //[index, quant_of_items, index, quant_of_items, count]
+        lt //[0x01/0x00, index, quant_of_items, count]
+        sum_item //[jump_pc, 0x01/0x00, index, quant_of_items, count]
+        jumpi //[index, quant_of_items, count]
+        swap2
+        0x00 
+        mstore
+        0x20 0x00 return
+    err: 
+        0x00 0x00 revert
+    sum_item:
+        //[index, quant_of_items, count]
+        dup1 //[index, index, quant_of_items, count]
+        0x44 //[0x04, index, index, quant_of_items, count]
+        add //[index+4, index, quant_of_items, count]
+        calldataload //[arg, index, quant_of_items, count]
+        dup4 //[count, arg, index, quant_of_items, count]
+        add //[new_count, index, quant_of_items, count]
+        swap1 //[index, new_count, quant_of_items, count]
+        0x20 //[0x00, index, new_count, quant_of_items, count]
+        add //[new_index, new_count, quant_of_items, count]
+        swap1 //[new_count, new_index, quant_of_items, count]
+        swap3 //[count, new_index, quant_of_items, new_count]
+        pop //[new_index, quant_of_items, new_count]
+        dup2 //[quant_of_items, new_index, quant_of_items, new_count]
+        dup2 //[new_index, quant_of_items, new_index, quant_of_items, new_count]
+        0x1d
+        jump
 }
+
+
+
+
